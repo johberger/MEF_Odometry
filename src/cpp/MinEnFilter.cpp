@@ -18,8 +18,8 @@ MinEnFilter::~MinEnFilter() {
 
 MinEnFilter::MinEnFilter( Matrix3d& Camera, double q, double s1, double s2, double alpha, double numSteps, int order) {
 	this->camera = Camera;
-	this->q1 = q / numSteps;
-	this->q2 = q / numSteps;
+	this->q1 = q;
+	this->q2 = q;
 	this->s1 = s1;
 	this->s2 = s2;
 	this->alpha = alpha;
@@ -27,14 +27,15 @@ MinEnFilter::MinEnFilter( Matrix3d& Camera, double q, double s1, double s2, doub
 	this->nPoints = 0;
 	delta = 1/numSteps;
 	this->order = order;
+	iteration = 0;
 		
 	VectorXd w(6);
 	w << s1,s1,s1,s2,s2,s2;
 	MatrixXd invW_temp = (w.cwiseInverse()).asDiagonal();
 	
 	cout << "\n\n delta = " << delta << "\n\n";
-	cout << "\n\n q1 = " << q1 << "\n\n";
-	cout << "\n\n q2 = " << q2 << "\n\n";
+	cout << "\n\n q1 = " << this->q1 << "\n\n";
+	cout << "\n\n q2 = " << this->q2 << "\n\n";
 	cout << "\n\n s1 = " << s1 << "\n\n";
 	cout << "\n\n s2 = " << s2 << "\n\n";
 	cout << "\n\n numSteps = " << numSteps << "\n\n";
@@ -61,10 +62,12 @@ MinEnFilter::MinEnFilter( Matrix3d& Camera, double q, double s1, double s2, doub
 
 
 Matrix4d MinEnFilter::iterate(MatrixXd& XY, VectorXd& Depth, MatrixXd& Flow) {
-	cout << "Iterate:" << endl;
+	cout << "Iterate: " << iteration << endl;
+	iteration ++;
 	
-	LieAlgebra grad;
-	MatrixXd Hessian;
+	LieAlgebra grad, KE;
+	MatrixXd Hessian, KP;
+	
 	
 	// check dimensions
 	nPoints = XY.rows();
@@ -91,13 +94,16 @@ Matrix4d MinEnFilter::iterate(MatrixXd& XY, VectorXd& Depth, MatrixXd& Flow) {
 	Hessian = computeHessian(Gk, Disps_inhom);
 // 	cout << "\n\n Hessian: \n\n" << Hessian << endl;
 	
-
-	
-	currG = integrateGImplicit(grad, Hessian, Gk, Disps_inhom);
-	cout << "\n\n Result of integrateGImplicit: \n\n" << currG.E << endl;
-	
-	currP = integratePExplicit(grad,Hessian);
-	cout << "\n\n Result of integratePExplicit: \n\n" << currP << endl;
+	for (size_t i = 0; i < numSteps; i++ ){
+		KE = integrateGImplicit(grad, Gk, Disps_inhom);
+// 		cout << "\n\n Result of integrateGImplicit: \n\n" << currG.E << endl;
+		currG = currG * KE.exp_g();
+		
+		KP = integratePExplicit(grad ,Hessian);
+// 		cout << "\n\n COMPUTED KP: \n\n" << KP << endl;
+		currP = currP + delta * KP;
+		
+	}
 	
 	return currG.E;
 	
@@ -128,7 +134,7 @@ LieAlgebra MinEnFilter::computeGradient(const LieGroup& S, const MatrixXd& Gk, c
 	MatrixXd h = iEg.leftCols(2).cwiseQuotient(kappa*MatrixXd::Ones(1,2));
 	MatrixXd z = Disps_inhom.leftCols(2) - h;
 	MatrixXd Qvec(1,2);
-	Qvec << q1,q2;
+	Qvec << q1/nPoints,q2/nPoints;
 	MatrixXd qvec = MatrixXd::Ones(nPoints,1) * Qvec;
 	MatrixXd b12 = (kappa.cwiseInverse()*MatrixXd::Ones(1,2)).cwiseProduct(qvec.cwiseProduct(z));
 	MatrixXd kappa2 = kappa.cwiseProduct(kappa);
@@ -187,8 +193,8 @@ MatrixXd MinEnFilter::DAk(const MatrixXd& Gk, const MatrixXd& Disps_inhom, int d
 	VectorXd eta2 = kappaM2.cwiseProduct(lambda.col(1));
 	VectorXd a31 = zeta1 + eta1;
 	VectorXd a32 = zeta2 + eta2;
-	MatrixXd b1row = q1 * ((z.col(0))*Ones).cwiseProduct(iEg);
-	MatrixXd b2row = q2 * ((z.col(1))*Ones).cwiseProduct(iEg);	
+	MatrixXd b1row = q1/nPoints * ((z.col(0))*Ones).cwiseProduct(iEg);
+	MatrixXd b2row = q2/nPoints * ((z.col(1))*Ones).cwiseProduct(iEg);	
 	MatrixXd c1row = ((xi * Ones).cwiseProduct(b1row)).colwise().sum();
 	MatrixXd c2row = ((xi * Ones).cwiseProduct(b2row)).colwise().sum();
 	MatrixXd aux1(nPoints,4);
@@ -201,8 +207,8 @@ MatrixXd MinEnFilter::DAk(const MatrixXd& Gk, const MatrixXd& Disps_inhom, int d
 			MatrixXd::Zero(1,4);
 	
 	// % second part of Hessian
-	VectorXd rho1 = -q1 * kappaM2.cwiseProduct(iEg.col(0));
-	VectorXd rho2 = -q2 * kappaM2.cwiseProduct(iEg.col(1));
+	VectorXd rho1 = -q1/nPoints * kappaM2.cwiseProduct(iEg.col(0));
+	VectorXd rho2 = -q2/nPoints * kappaM2.cwiseProduct(iEg.col(1));
 	MatrixXd Frow1 = kappaM1.cwiseProduct(lambda.col(0)) - kappaM2.cwiseProduct((lambda.col(2)).cwiseProduct(iEg.col(0)));
 	MatrixXd Frow2 = kappaM1.cwiseProduct(lambda.col(1)) - kappaM2.cwiseProduct((lambda.col(2)).cwiseProduct(iEg.col(1)));
 	MatrixXd G1row1 = (Frow1*Ones).cwiseProduct(iEg);
@@ -211,8 +217,8 @@ MatrixXd MinEnFilter::DAk(const MatrixXd& Gk, const MatrixXd& Disps_inhom, int d
 	MatrixXd G2row2 = ((z.col(1))*Ones).cwiseProduct(lambda);
 	MatrixXd Grow1 = G1row1 - G2row1;
 	MatrixXd Grow2 = G1row2 - G2row2;
-	MatrixXd h1row = (q1*(kappaM1*Ones).cwiseProduct(Grow1)).colwise().sum();
-	MatrixXd h2row = (q2 * (kappaM1*Ones).cwiseProduct(Grow2)).colwise().sum();
+	MatrixXd h1row = (q1/nPoints * (kappaM1*Ones).cwiseProduct(Grow1)).colwise().sum();
+	MatrixXd h2row = (q2/nPoints * (kappaM1*Ones).cwiseProduct(Grow2)).colwise().sum();
 	MatrixXd aux2(nPoints,4);
 	aux2 << rho1.cwiseProduct(Grow1.col(0)) + rho2.cwiseProduct(Grow2.col(0)), rho1.cwiseProduct(Grow1.col(1)) + rho2.cwiseProduct(Grow2.col(1)), rho1.cwiseProduct(Grow1.col(2)) + rho2.cwiseProduct(Grow2.col(2)), rho1.cwiseProduct(Grow1.col(3)) + rho2.cwiseProduct(Grow2.col(3));
 	MatrixXd h3row = aux2.colwise().sum();
@@ -340,26 +346,27 @@ MatrixXd MinEnFilter::integratePExplicit(const LieAlgebra& grad, const MatrixXd&
 		exit(1);
 	}
 	
-	R = currP + delta * ( -alpha * currP + C + A * currP + currP * A.transpose() - currP * D * currP);
+	
+	R =  -alpha * currP + C + A * currP + currP * A.transpose() - currP * D * currP;
 	
 	return R;
 	
 }
 
-LieGroup MinEnFilter::integrateGImplicit(const LieAlgebra& grad, const MatrixXd& Hessian, const MatrixXd& Gk, const MatrixXd& Disps_inhom ) {
+LieAlgebra MinEnFilter::integrateGImplicit(const LieAlgebra& grad, const MatrixXd& Gk, const MatrixXd& Disps_inhom ) {
 	
 	LieAlgebra K = LieAlgebra(order);
-	LieGroup R;
-	LieAlgebra S;
-	LieGroup U;
-	LieGroup M1;
-	
+	LieAlgebra U;
+		
 	for (size_t i=0; i < NUM_FIXEDPOINT_ITERATIONR; i++) {
-		U = (0.5 * K).exp_g();
-		S = computeGradient(currG * U, Gk, Disps_inhom);
-		K = delta * dynamicsE(S, currG);
+		U = computeGradient(currG * ((0.5 * K).exp_g()), Gk, Disps_inhom);
+// 		cout << "\n\n U cpp: << \n\n" << U.E << endl;
+		K = delta * dynamicsE(U, currG);
+// 		cout << "\n\n K cpp: << \n\n" << K.E << endl;
+	
 	}
-	return currG * K.exp_g();
+// 	cout << "\n ================================================ \n" << endl;
+	return K; //currG * K.exp_g();
 }
 
 

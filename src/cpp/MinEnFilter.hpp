@@ -14,6 +14,7 @@ private:
 	double delta; // 
 	double alpha, s1, s2, q1, q2;
 	int nPoints;
+	int iteration;
 	Matrix3d camera;
 	LieGroup currG; // current state of Lie Group
 	MatrixXd currP; // current second order information matirx
@@ -26,8 +27,7 @@ private:
 	MatrixXd computeHessian(const MatrixXd& Gk, const MatrixXd& Disps_inhom);
 	MatrixXd integratePImplicit(const LieAlgebra & grad, const MatrixXd& Hessian);
 	MatrixXd integratePExplicit(const LieAlgebra & grad, const MatrixXd& Hessian);
-	LieGroup integrateGImplicit(const LieAlgebra& grad, const MatrixXd& Hessian, const MatrixXd& Gk, const MatrixXd& Disps_inhom);
-	LieGroup integrateGExplicit(const LieAlgebra& grad, const MatrixXd& Hessian, const MatrixXd& Gk, const MatrixXd& Disps_inhom);
+	LieAlgebra integrateGImplicit(const LieAlgebra& grad, const MatrixXd& Gk, const MatrixXd& Disps_inhom);
 	LieAlgebra dynamicsE(const LieAlgebra & grad, const LieGroup & G);
 	
 	MatrixXd tildeGammaAst(const Matrix4d& M);
