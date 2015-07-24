@@ -1,0 +1,4 @@
+[Project]
+Name=MinimumEnergyFilter
+Manager=KDevCMakeManager
+VersionControl=kdevgit
