@@ -23,6 +23,12 @@ Year = {2015},
 
 ======================= BUILDING INSTRUCTIONS ===========================
 
+0. Preliminaries:
+
+For compilation we require the Eigen3 library. On Ubuntu system you can install it via
+
+sudo apt-get install libeigen3-dev
+
 1. For downloading this code form github, go to your command line ans insert
 git clone https://github.com/johberger/MEF_Odometry.git
 
