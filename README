@@ -1,0 +1,44 @@
+MINIMUM ENERGY FILTER FOR VISUAL ODOMETRY APPLICATION
+
+If you use this code for your publication plase cite our papers:
+
+[1] 	Berger, J.; Neufeld, A.; Becker, F.; Lenzen, F. and Schnörr, C. Second Order Minimum Energy 		Filtering on SE(3) with Nonlinear Measurement Equations. In Scale Space and Variational 		Methods in Computer Vision (SSVM 2015), 2015.
+
+@InProceedings{Berger-et-al-2015a,
+Title = {{S}econd {O}rder {M}inimum {E}nergy {F}iltering on {SE}(3) with {N}onlinear {M}easurement {E}quations},
+Author	= {Berger, Johannes and Neufeld, Andreas and Becker, Florian and Lenzen, Frank and Schn{\"o}rr, Christoph},
+Booktitle = {Scale Space and Variational Methods in Computer Vision (SSVM 2015)},
+Year = {2015},
+}
+
+
+[2]		Berger, J.; Lenzen, F.; Becker, F.; Neufeld, A. and Schnörr, C. Second-Order Recursive 			Filtering on the Rigid-Motion Lie Group SE(3) Based on Nonlinear Observations., preprint.
+
+@Misc{Berger-et-al-2015b,
+  Title                    = {{S}econd-{O}rder {R}ecursive {F}iltering on the {R}igid-{M}otion {L}ie {G}roup {SE}(3) {B}ased on {N}onlinear {O}bservations},
+  Author                   = {Berger, Johannes and Lenzen, Frank and Becker, Florian and Neufeld, Andreas and {Sch}n{\"o}rr, Christoph},
+  Note                     = {preprint},
+  Year                     = {2015},
+}
+
+======================= BUILDING INSTRUCTIONS ===========================
+
+1. For downloading this code form github, go to your command line ans insert
+git clone https://github.com/johberger/MEF_Odometry.git
+
+Note that git must be installed to do this.
+
+2. change into the folder MEF_Odometry
+cd MEF_Odometry
+
+3. Open matlab
+path_to_matlab/matlab &
+
+4. In matlab compile the mex file by running make.m
+make
+
+5. now you can run the main file with a working example by typeing in matlab
+main
+
+
+

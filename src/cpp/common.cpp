@@ -46,8 +46,6 @@ Matrix3d MEFcommon::mex(const Vector3d& v) {
 }
 
 
-
-
 Matrix4d MEFcommon::expSE(const Matrix4d& m) {
 	Vector3d v = m.block(0,3,3,1);
 	Matrix3d R = m.block(0,0,3,3);

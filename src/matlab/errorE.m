@@ -5,15 +5,10 @@ function [ err ] = errorE( E, F )
     Frot = F(1:3,1:3);
     Etrans = E(1:3,4);
     Ftrans = F(1:3,4);
-err = [norm(Etrans-Ftrans), rotation_error(Erot,Frot)];
+    
+    diff = Erot*Frot';
+    angle = real(acos((trace(diff)-1.)/2.))*180./pi;
+    err = [norm(Etrans-Ftrans), angle];
 end
 
-function [ err ] = rotation_error( R0,R1 )
-%ROTATION_ERROR computes the angular distance between two rotation matrices
-    err = angle_R(R0*R1');
-end
 
-function [ theta] = angle_R( R )
-%ANGLE_R Compute the rotation angles theta of a rotation matrix R
-    theta = real(acos((trace(R)-1.)/2.))*180./pi;
-end

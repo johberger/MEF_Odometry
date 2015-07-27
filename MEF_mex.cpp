@@ -1,5 +1,5 @@
-#include "common.hpp"
-#include "MinEnFilter.hpp"
+#include "src/cpp/common.hpp"
+#include "src/cpp/MinEnFilter.hpp"
 #include <mex.h>
 
 using namespace std;

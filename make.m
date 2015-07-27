@@ -1,3 +1,1 @@
-%mex('MEF_mex.cpp', 'common.cpp', 'LieGroup.cpp', 'LieAlgebra.cpp', 'MinEnFilter.cpp', '-I.');
-
-mex MEF_mex.cpp common.cpp LieGroup.cpp LieAlgebra.cpp MinEnFilter.cpp -I.
+mex MEF_mex.cpp src/cpp/common.cpp src/cpp/LieGroup.cpp src/cpp/LieAlgebra.cpp src/cpp/MinEnFilter.cpp

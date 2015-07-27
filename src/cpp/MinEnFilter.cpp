@@ -33,14 +33,6 @@ MinEnFilter::MinEnFilter( Matrix3d& Camera, double q, double s1, double s2, doub
 	w << s1,s1,s1,s2,s2,s2;
 	MatrixXd invW_temp = (w.cwiseInverse()).asDiagonal();
 	
-	cout << "\n\n delta = " << delta << "\n\n";
-	cout << "\n\n q1 = " << this->q1 << "\n\n";
-	cout << "\n\n q2 = " << this->q2 << "\n\n";
-	cout << "\n\n s1 = " << s1 << "\n\n";
-	cout << "\n\n s2 = " << s2 << "\n\n";
-	cout << "\n\n numSteps = " << numSteps << "\n\n";
-	cout << "\n\n alpha = " << alpha << "\n\n";	
-	
 	if (order == 1) {
 		currG = LieGroup(MatrixXd::Identity(4,4));
 		currP = MatrixXd::Identity(6,6);
@@ -69,7 +61,7 @@ Matrix4d MinEnFilter::iterate(MatrixXd& XY, VectorXd& Depth, MatrixXd& Flow) {
 	MatrixXd Hessian, KP;
 	
 	
-	// check dimensions
+	// get and check dimensions
 	nPoints = XY.rows();
 	
 	if (nPoints!= Depth.rows()) {
@@ -87,26 +79,22 @@ Matrix4d MinEnFilter::iterate(MatrixXd& XY, VectorXd& Depth, MatrixXd& Flow) {
 	temp << XYZ_inhom, Depth.cwiseInverse();
 	MatrixXd Gk = (Depth*MatrixXd::Ones(1,4)).cwiseProduct(temp);
 
+	
+	// compute Gradient of Hamiltonian
 	grad = computeGradient(currG , Gk, Disps_inhom);
-// 	cout << "\n\n grad.E: \n\n" << grad.E << endl;
-// 	cout << "\n\n grad.V: \n\n" << grad.V << endl;
-	
+	// compute Hessian of Hamiltonian
 	Hessian = computeHessian(Gk, Disps_inhom);
-// 	cout << "\n\n Hessian: \n\n" << Hessian << endl;
+
 	
+	// Numerical integration of state and second order information
 	for (size_t i = 0; i < numSteps; i++ ){
 		KE = integrateGImplicit(grad, Gk, Disps_inhom);
-// 		cout << "\n\n Result of integrateGImplicit: \n\n" << currG.E << endl;
 		currG = currG * KE.exp_g();
-		
 		KP = integratePExplicit(grad ,Hessian);
-// 		cout << "\n\n COMPUTED KP: \n\n" << KP << endl;
 		currP = currP + delta * KP;
-		
 	}
 	
 	return currG.E;
-	
 }
 
 
@@ -282,25 +270,13 @@ MatrixXd MinEnFilter::integratePImplicit(const LieAlgebra & grad, const MatrixXd
 		exit(1);
 	}
 
-	// ensure that D is symmetric
 	D = 0.5 * (D + D.transpose());
-// 	// ensure that D is positive definite
-// 	[V,eigs]=eig(D);
-// 	d=diag(eigs);
-// 	if ( min(eigs)<eps) {
-// 		d(d<=eps)=eps;
-// 		D = V*diag(d)*V';
-// 	}  
-	
 	MatrixXd tildeQ = currP + delta * C;
-// 	cout << "\n\n tildeQ \n\n " << tildeQ << endl;
 	MatrixXd tildeA = (delta * A - (1+delta*alpha)/2 * Id).transpose();
-// 	cout << "\n\n tildeA  \n\n " << tildeA << endl;	
 	
 	Eigen::LLT<MatrixXd> lltOfD(D);
 	MatrixXd cholD = lltOfD.matrixL();
 	MatrixXd tildeB = sqrt(delta)*cholD;
-// 	cout << "\n\n tildeB  \n\n " << tildeB << endl;	
 
    // solve algebraic Riccati equation to find solution of implicit Euler scheme, i.e.
    return care(tildeA, tildeB, tildeQ); 
@@ -323,24 +299,15 @@ MatrixXd MinEnFilter::integratePExplicit(const LieAlgebra& grad, const MatrixXd&
 	// define function that applies a function to each row of a matrix
 	if (order == 1) {
 		A = -tildeGammaAst(grad.E);
-// 		cout << "\n\n Matrix A: \n\n" << A << endl;
-// 		cout << "\n\n tildeGamma(grad.E): \n\n" << tildeGamma(grad.E) << endl;
 		D = (tildeGamma(grad.E) + Hessian);
-// 		cout << "\n\n Matrix D: \n\n" << D << endl;
 	} else if ( order>=2 ) {
 		Gamma.topLeftCorner(6,6) = tildeGammaAst(grad.E);
-// 		cout << "\n\n Gamma= \n\n" << Gamma << endl;
 		FG = MotionPrior(currG);
-// 		cout << "\n\n FG.E= \n\n" << FG.E << endl;
-// 		cout << "\n\n FG.V= \n\n" << FG.V << endl;
 		B = MEFcommon::adjoint(FG.E); // kronSE(FG.e.mat, eye(4)) - kronSE(eye(4),FG.e.mat);
-// 		cout << "\n\n B= \n\n" << B << endl;
 		A.topLeftCorner(6,6) = -B;
 		A.block(0, 6, dim-6 ,dim-6) = MatrixXd::Identity(dim-6,dim-6);
 		A = A-Gamma;
-// 		cout << "\n\n A= \n\n" << A << endl;
 		D.topLeftCorner(6,6) = tildeGamma(grad.E) + Hessian;
-// 		cout << "\n\n D= \n\n" << D << endl;
 	} else {
 		cerr << "Parameter order must be positive" << endl;
 		exit(1);
@@ -360,13 +327,9 @@ LieAlgebra MinEnFilter::integrateGImplicit(const LieAlgebra& grad, const MatrixX
 		
 	for (size_t i=0; i < NUM_FIXEDPOINT_ITERATIONR; i++) {
 		U = computeGradient(currG * ((0.5 * K).exp_g()), Gk, Disps_inhom);
-// 		cout << "\n\n U cpp: << \n\n" << U.E << endl;
-		K = delta * dynamicsE(U, currG);
-// 		cout << "\n\n K cpp: << \n\n" << K.E << endl;
-	
+		K = delta * dynamicsE(U, currG);	
 	}
-// 	cout << "\n ================================================ \n" << endl;
-	return K; //currG * K.exp_g();
+	return K;
 }
 
 
@@ -433,6 +396,8 @@ MatrixXd MinEnFilter::tildeGammaAst(const Matrix4d& M) {
 }
 
 MatrixXd MinEnFilter::care(const MatrixXd& A, const MatrixXd& B, const MatrixXd& Q) {
+	
+	// TO DO
 	
 	MatrixXd X = MatrixXd::Zero(6*order, 6*order);
 

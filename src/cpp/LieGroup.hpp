@@ -26,7 +26,6 @@ public:
    */
   LieGroup operator*(const LieGroup& rhs);
   
-  
   /** This method is a shorthand for the tangent map of the left translation evaluated at identity
    * @param rhs: Lie Algebra at RHS that shoulb transported to T_{lhs}G, where G denote the Lie Group
    * @return: tangent vector on T_{lhs}G
