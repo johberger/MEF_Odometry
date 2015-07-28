@@ -93,7 +93,7 @@ for i=start:stop-1
     % plot depth
     subplot(3,2,4);
     imshow(imagesc2rgb(depth, [0,50]));
-    title('Induced flow computed by method from Vogel et al. (2015)');    
+    title('Induced depth map computed by method from Vogel et al. (2015)');    
     %plot rotational error
     subplot(3,2,5);
     plot((start+1):stop, error_rot,'r-x');
